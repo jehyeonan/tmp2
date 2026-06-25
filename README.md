@@ -1,65 +1,68 @@
 # 파주시청 바이브코딩 4회차 Starter Package
 
-3회차에서 만든 개인용 CSV 정리 도구를 4회차 팀 공용 Vercel 서비스로 확장하기 위한 시작 폴더입니다.
+팀별 CSV 제출 파일을 통합하고, 누락·형식 오류·중복 후보를 검토한 뒤 결과 CSV로 내려받는 수업용 Vercel 프로젝트입니다.
 
-## 포함 파일
+> 실제 개인정보, 민원 원문, 내부자료, 예산·계약 자료는 업로드하지 않습니다. 수업용 가상 CSV만 사용합니다.
 
-```text
-paju-team-file-collector/
-├─ index.html
-├─ api/
-│  └─ apply-rules.js
-├─ sample-data/
-│  ├─ team-a-upload.csv
-│  ├─ team-b-upload.csv
-│  └─ team-c-upload.csv
-└─ .vscode/
-   ├─ extensions.json
-   └─ settings.json
-```
+## 핵심 기능
 
-## 파일 역할
+- 팀명·제출자·CSV 파일을 업로드 목록에 추가
+- 수업용 샘플 CSV를 불러와 흐름 즉시 확인
+- 처리상태·우선순위 표준화, 기한 누락·형식 오류·중복 후보 점검
+- 결과 필터: 전체, 확인 필요, 중복 의심, 기한 누락, 형식 오류
+- 행별 상세 보기와 통합 CSV 다운로드
+- `/api/apply-rules` 연결 실패 시 브라우저 fallback 규칙 적용
 
-| 파일 | 역할 |
-|---|---|
-| `index.html` | 화면, CSV 업로드, 샘플 CSV 불러오기, 결과표, 다운로드 기능 |
-| `api/apply-rules.js` | Vercel 서버 함수. CSV 행에 확인필요, 정리메모, 중복후보 규칙 적용 |
-| `sample-data/*.csv` | 수업용 샘플 CSV. 실제 개인정보와 내부자료는 넣지 않음 |
-| `.vscode/*` | VS Code에서 폴더를 열 때 추천 확장과 기본 설정 안내 |
-
-## 수업 중 수정 위치
-
-1. 화면 문구와 안내문을 바꿀 때: `index.html`
-2. 확인필요 조건과 정리메모 규칙을 바꿀 때: `api/apply-rules.js`
-3. 팀별 샘플 데이터를 바꿀 때: `sample-data/*.csv`
-
-## 로컬 확인 순서
-
-1. VS Code에서 이 폴더를 엽니다.
-2. `index.html`을 엽니다.
-3. Live Server 확장으로 `index.html`을 실행합니다.
-4. 샘플 CSV 불러오기 버튼을 누릅니다.
-5. 규칙 적용 버튼을 누르고 결과표와 다운로드 파일을 확인합니다.
-
-로컬에서 API 연결이 안 되면 브라우저 fallback 규칙으로 결과가 만들어질 수 있습니다. Vercel에 배포한 뒤에는 `/api/apply-rules` 서버 함수 호출과 로그를 함께 확인합니다.
-
-## Vercel 배포 구조
-
-GitHub 저장소에는 이 폴더 안의 파일들이 그대로 올라가야 합니다. 저장소 최상단에 `index.html`과 `api/` 폴더가 보여야 합니다.
+## 프로젝트 구조
 
 ```text
-GitHub 저장소 최상단
-├─ index.html
+.
+├─ index.html                 # 화면 구조와 모듈 진입점
+├─ styles/
+│  └─ review.css              # 반응형 화면·접근성 스타일
+├─ src/
+│  ├─ app.js                  # 이벤트 연결과 화면 갱신
+│  ├─ state.js                # 화면 상태
+│  ├─ constants.js            # CSV 헤더와 샘플 데이터
+│  ├─ csv.js                  # CSV 파싱·다운로드 변환
+│  ├─ normalise.js            # 상태·우선순위·날짜 표준화
+│  ├─ review.js               # 검토 규칙과 요약
+│  ├─ uploads.js              # 업로드 목록 관리
+│  ├─ process.js              # Vercel API·fallback 처리
+│  ├─ dom.js                  # 공통 DOM 렌더링
+│  └─ results-view.js         # 필터·상세 검토 화면
 ├─ api/
-│  └─ apply-rules.js
+│  └─ apply-rules.js          # Vercel Serverless Function
 └─ sample-data/
    ├─ team-a-upload.csv
    ├─ team-b-upload.csv
    └─ team-c-upload.csv
 ```
 
+## CSV 필수 열
+
+```text
+팀명, 제출자, 부서명, 업무유형, 제목, 처리상태, 처리기한, 우선순위, 내용
+```
+
+## 처리 규칙
+
+- 처리상태: `진행중 → 진행`, `대기 → 미확인`, `보류 → 확인필요` 등으로 표준화
+- 우선순위: `긴급·상 → 높음`, `중 → 보통`, `하 → 낮음` 등으로 표준화
+- 처리기한: 누락 여부와 `YYYY-MM-DD` 형식을 점검
+- 중복 후보: `부서명 + 업무유형 + 제목 + 처리기한 + 내용`이 같은 행을 표시
+- 결과: `중복여부`, `확인필요`, `정리메모`를 추가
+
+## 로컬 확인
+
+1. VS Code에서 폴더를 엽니다.
+2. `index.html`을 Live Server로 실행합니다.
+3. 샘플 CSV를 불러온 뒤 규칙 적용, 필터, 상세 보기, 결과 다운로드를 확인합니다.
+
+로컬에서 API 연결이 되지 않으면 브라우저 fallback 규칙으로 결과가 생성됩니다. Vercel에 배포한 뒤에는 `/api/apply-rules` 서버 함수 응답도 함께 확인합니다.
+
 ## 안전 기준
 
-- 실제 개인정보, 민원 원문, 내부자료, 계약자료, 예산자료는 넣지 않습니다.
-- API 키와 비밀값은 HTML이나 JS 파일에 적지 않습니다.
+- 실제 개인정보, 민원 원문, 내부자료, 계약자료, 예산자료를 넣지 않습니다.
+- API 키와 비밀값을 HTML이나 JavaScript 파일에 적지 않습니다.
 - Vercel 로그에 실제 개인정보가 남지 않도록 샘플 데이터만 사용합니다.
